@@ -248,7 +248,8 @@
     </section>
 
     <section class="filters">
-      <input type="text" placeholder="Search headlines, topics, brands..." />
+      <!-- Replace the search input with this date picker -->
+      <input type="date" id="date-filter" />
       <select>
         <option>All Sources</option>
         <option>NRN</option>
@@ -356,6 +357,14 @@
   </div>
 </body>
 <script>
+	// Automatically set the calendar input to show today's date on load
+window.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('date-filter').value = today;
+  
+  // Reload data whenever a user changes the calendar date
+  document.getElementById('date-filter').addEventListener('change', loadNews);
+});
   document.getElementById('fetch-btn').addEventListener('click', async function() {
     const button = this;
     const originalText = button.innerText;
@@ -400,47 +409,64 @@
     }, 3000);
   });
  
-// Function to load and display news
+// Function to load, filter by date, and display news
 async function loadNews() {
   const newsFeedSection = document.querySelector('.news-feed');
+  const selectedDateStr = document.getElementById('date-filter').value; // e.g. "2026-05-28"
   
-  // Keep the heading but show a loading state
   newsFeedSection.innerHTML = `
     <h3>Latest News Feed</h3>
-    <p style="padding: 20px; color: #6b7280;">Loading latest articles...</p>
+    <p style="padding: 20px; color: #6b7280;">Loading filtered articles...</p>
   `;
 
   try {
-    // PASTE YOUR NEW N8N "READ API" WEBHOOK URL HERE
     const readApiUrl = 'https://sa1.altametrics.com/webhook/c830dfa0-8df4-473b-b416-1f261beff41c';
-    
     const response = await fetch(readApiUrl);
     const data = await response.json();
 
-    // Clear the loading text, keep the heading
     newsFeedSection.innerHTML = `<h3>Latest News Feed</h3>`;
 
-    // Loop through each row from Google Sheets and build the HTML card
-    data.forEach(article => {
-      // Determine priority styling based on the AI's output
+    // Filter down to rows where the "Date Found" matches our calendar date picker
+    const filteredArticles = data.filter(article => {
+      if (!article['Date Found']) return false;
+      const articleDateStr = new Date(article['Date Found']).toISOString().split('T')[0];
+      return articleDateStr === selectedDateStr;
+    });
+
+    if (filteredArticles.length === 0) {
+      newsFeedSection.innerHTML += `<p style="padding: 20px; color: #6b7280; text-align: center;">No articles found for this date.</p>`;
+      return;
+    }
+
+    // Loop through filtered results
+    filteredArticles.forEach(article => {
       let priorityClass = '';
       if (article.Priority === 'High') priorityClass = 'priority-high';
       else if (article.Priority === 'Medium') priorityClass = 'priority-medium';
 
-      // Build the clean HTML structure matching your layout
+      const safeTags = article.Tags ? article.Tags : 'No Tags';
+      const safeDate = new Date(article['Date Found']).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+      // If the sheet has a Link column, we use it. Otherwise, default back to an empty anchor hash.
+      const articleUrl = article.Link || article.link || '#';
+
+      // Title now wraps with a link targeting a fresh tab (_blank)
       const articleHTML = `
         <article class="article">
-          <h4>${article.Headline}</h4>
-          <div class="meta">${article.Source} • Found ${new Date(article['Date Found']).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-          <p>${article.Summary}</p>
+          <h4>
+            <a href="${articleUrl}" target="_blank" style="text-decoration: none; color: #0f766e; hover: underline;">
+              ${article.Headline || 'Untitled Article'} ↗
+            </a>
+          </h4>
+          <div class="meta">${article.Source || 'Unknown Source'} • Found ${safeDate}</div>
+          <p>${article.Summary || 'No summary available.'}</p>
           <div class="tag-row">
-            <span class="tag ${priorityClass}">${article.Priority} Priority</span>
-            ${article.Tags.split(',').map(tag => `<span class="tag">${tag.trim()}</span>`).join('')}
+            <span class="tag ${priorityClass}">${article.Priority || 'Low'} Priority</span>
+            ${safeTags.split(',').map(tag => `<span class="tag">${tag.trim()}</span>`).join('')}
           </div>
         </article>
       `;
       
-      // Add the newly built article to the feed
       newsFeedSection.innerHTML += articleHTML;
     });
 
@@ -448,7 +474,7 @@ async function loadNews() {
     console.error('Failed to load news:', error);
     newsFeedSection.innerHTML = `
       <h3>Latest News Feed</h3>
-      <p style="padding: 20px; color: #dc2626;">Error loading articles. Please try again later.</p>
+      <p style="padding: 20px; color: #dc2626;">Error loading articles.</p>
     `;
   }
 }
