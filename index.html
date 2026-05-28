@@ -379,8 +379,9 @@
         button.innerText = 'News Fetched Successfully!';
         button.style.backgroundColor = '#0f766e'; 
         
-        // ADD THIS LINE: Refresh the feed with the new data
-        setTimeout(loadNews, 2000); 
+        // Remove the setTimeout and call loadNews immediately
+        // because n8n confirms the data is 100% in the sheet!
+        loadNews(); 
       } else {
         throw new Error('Network error');
       }
