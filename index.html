@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Restaurant Industry News Dashboard</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f7fb;
+      color: #1f2937;
+    }
+
+    .dashboard {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .header p {
+      margin: 6px 0 0;
+      color: #6b7280;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .primary {
+      background: #0f766e;
+      color: white;
+    }
+
+    .secondary {
+      background: white;
+      color: #1f2937;
+      border: 1px solid #d1d5db;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+    }
+
+    .stat-number {
+      font-size: 30px;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 20px;
+    }
+
+    .source-list h3,
+    .news-feed h3,
+    .content-panel h3 {
+      margin-top: 0;
+    }
+
+    .source-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 14px;
+    }
+
+    .source-status {
+      color: #0f766e;
+      font-weight: 600;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+    }
+
+    .article {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 18px 0;
+    }
+
+    .article:first-child {
+      padding-top: 0;
+    }
+
+    .article h4 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .meta {
+      color: #6b7280;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .tag {
+      background: #e0f2fe;
+      color: #075985;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .priority-high {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .priority-medium {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .content-box {
+      background: #f9fafb;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 14px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .content-box h4 {
+      margin: 0 0 6px;
+      font-size: 15px;
+    }
+
+    .content-box p {
+      margin: 0;
+      color: #4b5563;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .footer-note {
+      margin-top: 24px;
+      color: #6b7280;
+      font-size: 13px;
+    }
+
+    @media (max-width: 1000px) {
+      .stats-grid,
+      .filters,
+      .layout,
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <header class="header">
+      <div>
+        <h1>Restaurant Industry News Dashboard</h1>
+        <p>Auto-refreshes every 2 hours. Manual fetch available anytime.</p>
+      </div>
+      <div class="actions">
+        <button id="fetch-btn" class="primary">Fetch News Now</button>
+        <button class="secondary">Export Summary</button>
+        <button class="secondary">Email Brief</button>
+      </div>
+    </header>
+
+    <section class="stats-grid">
+      <div class="card">
+        <div>New Articles Found</div>
+        <div class="stat-number">24</div>
+      </div>
+      <div class="card">
+        <div>High Priority Stories</div>
+        <div class="stat-number">7</div>
+      </div>
+      <div class="card">
+        <div>Social Post Ideas</div>
+        <div class="stat-number">12</div>
+      </div>
+      <div class="card">
+        <div>Last Updated</div>
+        <div class="stat-number">8:00 AM</div>
+      </div>
+    </section>
+
+    <section class="filters">
+      <input type="text" placeholder="Search headlines, topics, brands..." />
+      <select>
+        <option>All Sources</option>
+        <option>NRN</option>
+        <option>Restaurant Dive</option>
+        <option>QSR Magazine</option>
+        <option>FSR Magazine</option>
+        <option>Franchise Times</option>
+      </select>
+      <select>
+        <option>All Categories</option>
+        <option>Operations</option>
+        <option>Labor</option>
+        <option>Technology</option>
+        <option>Franchise</option>
+        <option>Food Costs</option>
+        <option>Marketing</option>
+        <option>Events</option>
+      </select>
+      <select>
+        <option>All Priority</option>
+        <option>High</option>
+        <option>Medium</option>
+        <option>Low</option>
+      </select>
+      <select>
+        <option>Newest First</option>
+        <option>Oldest First</option>
+        <option>Priority First</option>
+      </select>
+    </section>
+
+    <div class="layout">
+      <aside class="card source-list">
+        <h3>Sources Monitored</h3>
+        <div class="source-item"><span>NRN</span><span class="source-status">Active</span></div>
+        <div class="source-item"><span>CalRestaurant</span><span class="source-status">Active</span></div>
+        <div class="source-item"><span>Texas Restaurant Show</span><span class="source-status">Active</span></div>
+        <div class="source-item"><span>Restaurant Dive</span><span class="source-status">Active</span></div>
+        <div class="source-item"><span>Restaurant Business</span><span class="source-status">Active</span></div>
+        <div class="source-item"><span>QSR Magazine</span><span class="source-status">Active</span></div>
+        <div class="source-item"><span>FSR Magazine</span><span class="source-status">Active</span></div>
+        <div class="source-item"><span>Franchise Times</span><span class="source-status">Active</span></div>
+        <div class="source-item"><span>Restaurant HQ</span><span class="source-status">Active</span></div>
+        <div class="source-item"><span>WebstaurantStore</span><span class="source-status">Active</span></div>
+      </aside>
+
+      <main class="main-grid">
+        <section class="card news-feed">
+          <h3>Latest News Feed</h3>
+
+          <article class="article">
+            <h4>Sample Headline: Restaurant operators increase investment in AI-driven labor tools</h4>
+            <div class="meta">Restaurant Dive • Technology • Found 8:00 AM • Published Today</div>
+            <p>Short summary of the article goes here. This should explain what happened, why it matters, and who it impacts.</p>
+            <div class="tag-row">
+              <span class="tag priority-high">High Priority</span>
+              <span class="tag">AI</span>
+              <span class="tag">Labor</span>
+              <span class="tag">Use for LinkedIn</span>
+            </div>
+          </article>
+
+          <article class="article">
+            <h4>Sample Headline: Franchise brands prepare for major menu and pricing changes</h4>
+            <div class="meta">Franchise Times • Franchise • Found 8:00 AM • Published Today</div>
+            <p>Short summary of the article goes here. Include potential impact for franchise owners and multi-unit operators.</p>
+            <div class="tag-row">
+              <span class="tag priority-medium">Medium Priority</span>
+              <span class="tag">Franchise</span>
+              <span class="tag">Pricing</span>
+              <span class="tag">Newsletter</span>
+            </div>
+          </article>
+        </section>
+
+        <aside class="card content-panel">
+          <h3>Content Opportunities</h3>
+
+          <div class="content-box">
+            <h4>RA News Digest</h4>
+            <p>Top 5 stories that could work for a 5-minute weekly video segment.</p>
+          </div>
+
+          <div class="content-box">
+            <h4>LinkedIn Post Ideas</h4>
+            <p>Executive-style takeaways from the most important industry updates.</p>
+          </div>
+
+          <div class="content-box">
+            <h4>Newsletter Candidates</h4>
+            <p>Stories worth including in a daily or weekly Restaurant Association email.</p>
+          </div>
+
+          <div class="content-box">
+            <h4>Sales/Marketing Angles</h4>
+            <p>News items that support Altametrics, Plum POS, labor, inventory, payroll, AI, or operations messaging.</p>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <p class="footer-note">
+      Suggested backend: n8n scheduled workflow every 2 hours + manual webhook trigger from Fetch News button + Google Sheet/Airtable/database storage.
+    </p>
+  </div>
+</body>
+<script>
+  document.getElementById('fetch-btn').addEventListener('click', async function() {
+    const button = this;
+    const originalText = button.innerText;
+    
+    // 1. Give the user visual feedback that the automation has started
+    button.innerText = 'Fetching News...';
+    button.style.opacity = '0.7';
+    button.style.cursor = 'wait';
+
+    try {
+      // 2. The URL that triggers your n8n workflow
+      const webhookUrl = 'https://sa1.altametrics.com/webhook/309d7b12-beed-4bf9-8291-db641d33bb50'; 
+      
+      // 3. Send the signal to n8n
+      const response = await fetch(webhookUrl, {
+        method: 'GET' 
+      });
+
+      // 4. Handle the success response
+      if (response.ok) {
+        button.innerText = 'News Fetched Successfully!';
+        button.style.backgroundColor = '#0f766e'; 
+        
+        // ADD THIS LINE: Refresh the feed with the new data
+        setTimeout(loadNews, 2000); 
+      } else {
+        throw new Error('Network error');
+      }
+    } catch (error) {
+      console.error('Error triggering n8n:', error);
+      button.innerText = 'Error Fetching News';
+      button.style.backgroundColor = '#991b1b'; // Match your high-priority red
+    }
+
+    // 5. Reset the button after 3 seconds so they can use it again later
+    setTimeout(() => {
+      button.innerText = originalText;
+      button.style.opacity = '1';
+      button.style.cursor = 'pointer';
+      button.style.backgroundColor = ''; 
+    }, 3000);
+  });
+ 
+// Function to load and display news
+async function loadNews() {
+  const newsFeedSection = document.querySelector('.news-feed');
+  
+  // Keep the heading but show a loading state
+  newsFeedSection.innerHTML = `
+    <h3>Latest News Feed</h3>
+    <p style="padding: 20px; color: #6b7280;">Loading latest articles...</p>
+  `;
+
+  try {
+    // PASTE YOUR NEW N8N "READ API" WEBHOOK URL HERE
+    const readApiUrl = 'https://sa1.altametrics.com/webhook/c830dfa0-8df4-473b-b416-1f261beff41c';
+    
+    const response = await fetch(readApiUrl);
+    const data = await response.json();
+
+    // Clear the loading text, keep the heading
+    newsFeedSection.innerHTML = `<h3>Latest News Feed</h3>`;
+
+    // Loop through each row from Google Sheets and build the HTML card
+    data.forEach(article => {
+      // Determine priority styling based on the AI's output
+      let priorityClass = '';
+      if (article.Priority === 'High') priorityClass = 'priority-high';
+      else if (article.Priority === 'Medium') priorityClass = 'priority-medium';
+
+      // Build the clean HTML structure matching your layout
+      const articleHTML = `
+        <article class="article">
+          <h4>${article.Headline}</h4>
+          <div class="meta">${article.Source} • Found ${new Date(article['Date Found']).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+          <p>${article.Summary}</p>
+          <div class="tag-row">
+            <span class="tag ${priorityClass}">${article.Priority} Priority</span>
+            ${article.Tags.split(',').map(tag => `<span class="tag">${tag.trim()}</span>`).join('')}
+          </div>
+        </article>
+      `;
+      
+      // Add the newly built article to the feed
+      newsFeedSection.innerHTML += articleHTML;
+    });
+
+  } catch (error) {
+    console.error('Failed to load news:', error);
+    newsFeedSection.innerHTML = `
+      <h3>Latest News Feed</h3>
+      <p style="padding: 20px; color: #dc2626;">Error loading articles. Please try again later.</p>
+    `;
+  }
+}
+
+// Automatically load the news when the dashboard opens
+window.addEventListener('DOMContentLoaded', loadNews); 
+ 
+</script>
+</html>
