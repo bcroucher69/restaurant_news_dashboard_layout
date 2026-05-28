@@ -409,15 +409,15 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 3000);
   });
  
-// Function to load, filter by date, and display news
+// Function to load, filter by date, and display news & content opportunities
 async function loadNews() {
   const newsFeedSection = document.querySelector('.news-feed');
-  const selectedDateStr = document.getElementById('date-filter').value; // e.g. "2026-05-28"
+  const contentPanel = document.querySelector('.content-panel');
+  const selectedDateStr = document.getElementById('date-filter').value; 
   
-  newsFeedSection.innerHTML = `
-    <h3>Latest News Feed</h3>
-    <p style="padding: 20px; color: #6b7280;">Loading filtered articles...</p>
-  `;
+  // Show loading states
+  newsFeedSection.innerHTML = `<h3>Latest News Feed</h3><p style="padding: 20px; color: #6b7280;">Loading filtered articles...</p>`;
+  contentPanel.innerHTML = `<h3>Content Opportunities</h3><p style="padding: 20px; color: #6b7280;">Analyzing best angles...</p>`;
 
   try {
     const readApiUrl = 'https://sa1.altametrics.com/webhook/c830dfa0-8df4-473b-b416-1f261beff41c';
@@ -425,8 +425,9 @@ async function loadNews() {
     const data = await response.json();
 
     newsFeedSection.innerHTML = `<h3>Latest News Feed</h3>`;
+    contentPanel.innerHTML = `<h3>Content Opportunities</h3>`;
 
-    // Filter down to rows where the "Date Found" matches our calendar date picker
+    // 1. Filter articles by the selected calendar date
     const filteredArticles = data.filter(article => {
       if (!article['Date Found']) return false;
       const articleDateStr = new Date(article['Date Found']).toISOString().split('T')[0];
@@ -435,26 +436,21 @@ async function loadNews() {
 
     if (filteredArticles.length === 0) {
       newsFeedSection.innerHTML += `<p style="padding: 20px; color: #6b7280; text-align: center;">No articles found for this date.</p>`;
+      contentPanel.innerHTML += `<p style="padding: 20px; color: #6b7280; text-align: center;">No content opportunities today.</p>`;
       return;
     }
 
-    // Loop through filtered results
+    // 2. Render the Main News Feed
     filteredArticles.forEach(article => {
-      let priorityClass = '';
-      if (article.Priority === 'High') priorityClass = 'priority-high';
-      else if (article.Priority === 'Medium') priorityClass = 'priority-medium';
-
+      let priorityClass = article.Priority === 'High' ? 'priority-high' : 'priority-medium';
       const safeTags = article.Tags ? article.Tags : 'No Tags';
       const safeDate = new Date(article['Date Found']).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
-      // If the sheet has a Link column, we use it. Otherwise, default back to an empty anchor hash.
       const articleUrl = article.Link || article.link || '#';
 
-      // Title now wraps with a link targeting a fresh tab (_blank)
       const articleHTML = `
         <article class="article">
           <h4>
-            <a href="${articleUrl}" target="_blank" style="text-decoration: none; color: #0f766e; hover: underline;">
+            <a href="${articleUrl}" target="_blank" style="text-decoration: none; color: #0f766e; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.7" onmouseout="this.style.opacity=1">
               ${article.Headline || 'Untitled Article'} ↗
             </a>
           </h4>
@@ -466,16 +462,62 @@ async function loadNews() {
           </div>
         </article>
       `;
-      
       newsFeedSection.innerHTML += articleHTML;
     });
 
+    // 3. The Matchmaker: Sort articles into Content Opportunities
+    let digestArt, linkedinArt, newsletterArt, salesArt;
+
+    // Helper function to check if an article contains specific AI tags
+    const hasTag = (article, tagArray) => {
+      if (!article.Tags) return false;
+      const t = article.Tags.toLowerCase();
+      return tagArray.some(tag => t.includes(tag.toLowerCase()));
+    };
+
+    filteredArticles.forEach(article => {
+      // Priority 1: High priority general news for the Digest
+      if (!digestArt && article.Priority === 'High') digestArt = article;
+      
+      // Priority 2: Business/Growth tags for LinkedIn
+      else if (!linkedinArt && hasTag(article, ['business', 'business growth', 'industry-trends', 'workforce', 'leadership'])) linkedinArt = article;
+      
+      // Priority 3: Marketing/Retention tags for the Newsletter
+      else if (!newsletterArt && hasTag(article, ['marketing', 'customer retention', 'menu development', 'franchising'])) newsletterArt = article;
+      
+      // Priority 4: Tech/Ops tags for Altametrics/Plum POS Sales Angles
+      else if (!salesArt && hasTag(article, ['point of sale', 'technology', 'tech', 'software integration', 'operations', 'back office', 'accounting'])) salesArt = article;
+    });
+
+    // Fallbacks: If the AI didn't output exact tag matches today, just grab the top articles so the UI looks great
+    digestArt = digestArt || filteredArticles[0];
+    linkedinArt = linkedinArt || filteredArticles[1 % filteredArticles.length];
+    newsletterArt = newsletterArt || filteredArticles[2 % filteredArticles.length];
+    salesArt = salesArt || filteredArticles[3 % filteredArticles.length];
+
+    // 4. Render the Content Opportunities HTML
+    const createOpportunityBox = (title, article) => {
+      const url = article.Link || article.link || '#';
+      return `
+        <div class="content-box">
+          <h4 style="border-bottom: 2px solid #e5e7eb; padding-bottom: 6px; margin-bottom: 10px;">${title}</h4>
+          <p style="font-size: 13px; font-weight: bold; margin-bottom: 4px;">
+            <a href="${url}" target="_blank" style="text-decoration: none; color: #0f766e;">${article.Headline} ↗</a>
+          </p>
+          <p style="font-size: 13px;">${article.Summary}</p>
+        </div>
+      `;
+    };
+
+    contentPanel.innerHTML += createOpportunityBox('RA News Digest', digestArt);
+    contentPanel.innerHTML += createOpportunityBox('LinkedIn Post Ideas', linkedinArt);
+    contentPanel.innerHTML += createOpportunityBox('Newsletter Candidates', newsletterArt);
+    contentPanel.innerHTML += createOpportunityBox('Sales/Marketing Angles', salesArt);
+
   } catch (error) {
     console.error('Failed to load news:', error);
-    newsFeedSection.innerHTML = `
-      <h3>Latest News Feed</h3>
-      <p style="padding: 20px; color: #dc2626;">Error loading articles.</p>
-    `;
+    newsFeedSection.innerHTML = `<h3>Latest News Feed</h3><p style="padding: 20px; color: #dc2626;">Error loading articles.</p>`;
+    contentPanel.innerHTML = `<h3>Content Opportunities</h3><p style="padding: 20px; color: #dc2626;">Error loading opportunities.</p>`;
   }
 }
 
