@@ -225,19 +225,26 @@
     <section class="stats-grid">
       <div class="card">
         <div>New Articles Found</div>
-        <div class="stat-number">24</div>
+        <!-- Added ID handle for dynamic calculations -->
+        <div class="stat-number" id="stat-total-articles">0</div>
       </div>
       <div class="card">
-        <div>High Priority Stories</div>
-        <div class="stat-number">7</div>
+        <div>Articles Breakdown by Priority</div>
+        <!-- Adjusted font size to fit your horizontal formatting clean and un-cropped -->
+        <div class="stat-number" id="stat-priority-breakdown" style="font-size: 16px; margin-top: 14px; font-weight: 600; line-height: 1.4;">
+          <span style="color: #b91c1c;">High | 0</span> &nbsp;&bull;&nbsp; 
+          <span style="color: #b45309;">Medium | 0</span> &nbsp;&bull;&nbsp; 
+          <span style="color: #0369a1;">Low | 0</span>
+        </div>
       </div>
       <div class="card">
         <div>Social Post Ideas</div>
         <div class="stat-number">12</div>
       </div>
       <div class="card">
-        <div>Last Updated</div>
-        <div class="stat-number">8:00 AM</div>
+        <div>Last Updated (PST)</div>
+        <!-- Added ID handle and set font size for an informative date/time string -->
+        <div class="stat-number" id="stat-last-updated" style="font-size: 15px; margin-top: 14px; color: #374151; font-weight: 600;">Never</div>
       </div>
     </section>
 
@@ -379,8 +386,13 @@ window.addEventListener('DOMContentLoaded', () => {
         button.innerText = 'News Fetched Successfully!';
         button.style.backgroundColor = '#0f766e'; 
         
-        // Remove the setTimeout and call loadNews immediately
-        // because n8n confirms the data is 100% in the sheet!
+        // Formats the timestamp directly to the target PST time-zone string format
+        const pstOptions = { timeZone: 'America/Los_Angeles', dateStyle: 'short', timeStyle: 'short' };
+        const formattedPstDateTime = new Date().toLocaleString('en-US', pstOptions);
+        
+        // Cache the time locally in the browser so it doesn't clear if you refresh
+        localStorage.setItem('dashboard_pst_last_updated', formattedPstDateTime);
+        
         loadNews(); 
       } else {
         throw new Error('Network error');
@@ -400,11 +412,15 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 3000);
   });
  
-// Function to load, filter by date, and display news & content opportunities
+// Function to load, filter by date, and display news & dynamic statistics
 async function loadNews() {
   const newsFeedSection = document.querySelector('.news-feed');
   const contentPanel = document.querySelector('.content-panel');
   const selectedDateStr = document.getElementById('date-filter').value; 
+  
+  // Display the cached execution time from your local storage
+  const cachedTime = localStorage.getItem('dashboard_pst_last_updated');
+  document.getElementById('stat-last-updated').innerText = cachedTime ? cachedTime + ' PST' : 'Pending Fetch...';
   
   // Show loading states
   newsFeedSection.innerHTML = `<h3>Latest News Feed</h3><p style="padding: 20px; color: #6b7280;">Loading filtered articles...</p>`;
@@ -425,13 +441,34 @@ async function loadNews() {
       return articleDateStr === selectedDateStr;
     });
 
+    // 2. Compute dynamic metrics for the active calendar view date
+    const totalCount = filteredArticles.length;
+    let highCount = 0;
+    let mediumCount = 0;
+    let lowCount = 0;
+
+    filteredArticles.forEach(article => {
+      const priorityVal = (article.Priority || '').toLowerCase().trim();
+      if (priorityVal === 'high') highCount++;
+      else if (priorityVal === 'medium') mediumCount++;
+      else lowCount++;
+    });
+
+    // Bind metrics cleanly to the top summary layout cards
+    document.getElementById('stat-total-articles').innerText = totalCount;
+    document.getElementById('stat-priority-breakdown').innerHTML = `
+      <span style="color: #b91c1c;">High | ${highCount}</span> &nbsp;&bull;&nbsp; 
+      <span style="color: #b45309;">Medium | ${mediumCount}</span> &nbsp;&bull;&nbsp; 
+      <span style="color: #0369a1;">Low | ${lowCount}</span>
+    `;
+
     if (filteredArticles.length === 0) {
       newsFeedSection.innerHTML += `<p style="padding: 20px; color: #6b7280; text-align: center;">No articles found for this date.</p>`;
       contentPanel.innerHTML += `<p style="padding: 20px; color: #6b7280; text-align: center;">No content opportunities today.</p>`;
       return;
     }
 
-    // 2. Render the Main News Feed
+    // 3. Render the Main News Feed
     filteredArticles.forEach(article => {
       let priorityClass = article.Priority === 'High' ? 'priority-high' : 'priority-medium';
       const safeTags = article.Tags ? article.Tags : 'No Tags';
@@ -456,10 +493,8 @@ async function loadNews() {
       newsFeedSection.innerHTML += articleHTML;
     });
 
-    // 3. The Matchmaker: Sort articles into Content Opportunities
+    // 4. Sort articles dynamically into Content Opportunities
     let digestArt, linkedinArt, newsletterArt, salesArt;
-
-    // Helper function to check if an article contains specific AI tags
     const hasTag = (article, tagArray) => {
       if (!article.Tags) return false;
       const t = article.Tags.toLowerCase();
@@ -467,26 +502,17 @@ async function loadNews() {
     };
 
     filteredArticles.forEach(article => {
-      // Priority 1: High priority general news for the Digest
       if (!digestArt && article.Priority === 'High') digestArt = article;
-      
-      // Priority 2: Business/Growth tags for LinkedIn
       else if (!linkedinArt && hasTag(article, ['business', 'business growth', 'industry-trends', 'workforce', 'leadership'])) linkedinArt = article;
-      
-      // Priority 3: Marketing/Retention tags for the Newsletter
       else if (!newsletterArt && hasTag(article, ['marketing', 'customer retention', 'menu development', 'franchising'])) newsletterArt = article;
-      
-      // Priority 4: Tech/Ops tags for Altametrics/Plum POS Sales Angles
       else if (!salesArt && hasTag(article, ['point of sale', 'technology', 'tech', 'software integration', 'operations', 'back office', 'accounting'])) salesArt = article;
     });
 
-    // Fallbacks: If the AI didn't output exact tag matches today, just grab the top articles so the UI looks great
     digestArt = digestArt || filteredArticles[0];
     linkedinArt = linkedinArt || filteredArticles[1 % filteredArticles.length];
     newsletterArt = newsletterArt || filteredArticles[2 % filteredArticles.length];
     salesArt = salesArt || filteredArticles[3 % filteredArticles.length];
 
-    // 4. Render the Content Opportunities HTML
     const createOpportunityBox = (title, article) => {
       const url = article.Link || article.link || '#';
       return `
