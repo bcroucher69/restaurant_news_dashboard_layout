@@ -249,36 +249,30 @@
     </section>
 
     <section class="filters">
-      <!-- Replace the search input with this date picker -->
+      <input type="text" id="search-filter" placeholder="Search headlines, topics, brands..." />
+      
       <input type="date" id="date-filter" />
-      <select>
-        <option>All Sources</option>
-        <option>NRN</option>
-        <option>Restaurant Dive</option>
-        <option>QSR Magazine</option>
-        <option>FSR Magazine</option>
-        <option>Franchise Times</option>
+      
+      <select id="source-filter">
+        <option value="All">All Sources</option>
+        <option value="NRN">NRN</option>
+        <option value="Restaurant Dive">Restaurant Dive</option>
+        <option value="QSR Magazine">QSR Magazine</option>
+        <option value="FSR Magazine">FSR Magazine</option>
+        <option value="Franchise Times">Franchise Times</option>
       </select>
-      <select>
-        <option>All Categories</option>
-        <option>Operations</option>
-        <option>Labor</option>
-        <option>Technology</option>
-        <option>Franchise</option>
-        <option>Food Costs</option>
-        <option>Marketing</option>
-        <option>Events</option>
+      
+      <select id="priority-filter">
+        <option value="All">All Priority</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
       </select>
-      <select>
-        <option>All Priority</option>
-        <option>High</option>
-        <option>Medium</option>
-        <option>Low</option>
-      </select>
-      <select>
-        <option>Newest First</option>
-        <option>Oldest First</option>
-        <option>Priority First</option>
+      
+      <select id="sort-filter">
+        <option value="Newest">Newest First</option>
+        <option value="Oldest">Oldest First</option>
+        <option value="Priority">Priority First</option>
       </select>
     </section>
 
@@ -355,76 +349,38 @@
   </div>
 </body>
 <script>
-	// Automatically set the calendar input to show today's date on load
+	// Automatically set the calendar and attach listeners to ALL filters
 window.addEventListener('DOMContentLoaded', () => {
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('date-filter').value = today;
   
-  // Reload data whenever a user changes the calendar date
+  // Whenever ANY of these change, reload the news!
   document.getElementById('date-filter').addEventListener('change', loadNews);
+  document.getElementById('source-filter').addEventListener('change', loadNews);
+  document.getElementById('priority-filter').addEventListener('change', loadNews);
+  document.getElementById('sort-filter').addEventListener('change', loadNews);
+  document.getElementById('search-filter').addEventListener('input', loadNews); // Triggers as you type
+  
+  loadNews(); // Initial load
 });
-  document.getElementById('fetch-btn').addEventListener('click', async function() {
-    const button = this;
-    const originalText = button.innerText;
-    
-    // 1. Give the user visual feedback that the automation has started
-    button.innerText = 'Fetching News...';
-    button.style.opacity = '0.7';
-    button.style.cursor = 'wait';
 
-    try {
-      // 2. The URL that triggers your n8n workflow
-      const webhookUrl = 'https://sa1.altametrics.com/webhook/309d7b12-beed-4bf9-8291-db641d33bb50'; 
-      
-      // 3. Send the signal to n8n
-      const response = await fetch(webhookUrl, {
-        method: 'GET' 
-      });
-
-      // 4. Handle the success response
-      if (response.ok) {
-        button.innerText = 'News Fetched Successfully!';
-        button.style.backgroundColor = '#0f766e'; 
-        
-        // Formats the timestamp directly to the target PST time-zone string format
-        const pstOptions = { timeZone: 'America/Los_Angeles', dateStyle: 'short', timeStyle: 'short' };
-        const formattedPstDateTime = new Date().toLocaleString('en-US', pstOptions);
-        
-        // Cache the time locally in the browser so it doesn't clear if you refresh
-        localStorage.setItem('dashboard_pst_last_updated', formattedPstDateTime);
-        
-        loadNews(); 
-      } else {
-        throw new Error('Network error');
-      }
-    } catch (error) {
-      console.error('Error triggering n8n:', error);
-      button.innerText = 'Error Fetching News';
-      button.style.backgroundColor = '#991b1b'; // Match your high-priority red
-    }
-
-    // 5. Reset the button after 3 seconds so they can use it again later
-    setTimeout(() => {
-      button.innerText = originalText;
-      button.style.opacity = '1';
-      button.style.cursor = 'pointer';
-      button.style.backgroundColor = ''; 
-    }, 3000);
-  });
- 
-// Function to load, filter by date, and display news & dynamic statistics
+// Function to load, filter, sort, and display news
 async function loadNews() {
   const newsFeedSection = document.querySelector('.news-feed');
   const contentPanel = document.querySelector('.content-panel');
-  const selectedDateStr = document.getElementById('date-filter').value; 
   
-  // Display the cached execution time from your local storage
+  // Grab the current values of all filters
+  const selectedDateStr = document.getElementById('date-filter').value; 
+  const selectedSource = document.getElementById('source-filter').value;
+  const selectedPriority = document.getElementById('priority-filter').value;
+  const selectedSort = document.getElementById('sort-filter').value;
+  const searchQuery = document.getElementById('search-filter').value.toLowerCase();
+  
+  // Display cached execution time
   const cachedTime = localStorage.getItem('dashboard_pst_last_updated');
   document.getElementById('stat-last-updated').innerText = cachedTime ? cachedTime + ' PST' : 'Pending Fetch...';
   
-  // Show loading states
   newsFeedSection.innerHTML = `<h3>Latest News Feed</h3><p style="padding: 20px; color: #6b7280;">Loading filtered articles...</p>`;
-  contentPanel.innerHTML = `<h3>Content Opportunities</h3><p style="padding: 20px; color: #6b7280;">Analyzing best angles...</p>`;
 
   try {
     const readApiUrl = 'https://sa1.altametrics.com/webhook/c830dfa0-8df4-473b-b416-1f261beff41c';
@@ -434,18 +390,55 @@ async function loadNews() {
     newsFeedSection.innerHTML = `<h3>Latest News Feed</h3>`;
     contentPanel.innerHTML = `<h3>Content Opportunities</h3>`;
 
-    // 1. Filter articles by the selected calendar date
-    const filteredArticles = data.filter(article => {
+    // 1. FILTERING ENGINE
+    let filteredArticles = data.filter(article => {
+      // Date Filter
       if (!article['Date Found']) return false;
       const articleDateStr = new Date(article['Date Found']).toISOString().split('T')[0];
-      return articleDateStr === selectedDateStr;
+      if (articleDateStr !== selectedDateStr) return false;
+
+      // Source Filter
+      if (selectedSource !== 'All' && article.Source !== selectedSource) return false;
+
+      // Priority Filter
+      if (selectedPriority !== 'All' && article.Priority !== selectedPriority) return false;
+
+      // Text Search Filter (Looks at Headline, Summary, and Tags)
+      if (searchQuery) {
+        const searchableText = `${article.Headline} ${article.Summary} ${article.Tags}`.toLowerCase();
+        if (!searchableText.includes(searchQuery)) return false;
+      }
+
+      return true; // Keep the article if it passes all tests
     });
 
-    // 2. Compute dynamic metrics for the active calendar view date
+    // 2. SORTING ENGINE
+    filteredArticles.sort((a, b) => {
+      const dateA = new Date(a['Date Found']);
+      const dateB = new Date(b['Date Found']);
+
+      if (selectedSort === 'Newest') {
+        return dateB - dateA;
+      } else if (selectedSort === 'Oldest') {
+        return dateA - dateB;
+      } else if (selectedSort === 'Priority') {
+        // Assign numerical weights to priority levels for sorting
+        const weight = { 'High': 3, 'Medium': 2, 'Low': 1 };
+        const valA = weight[a.Priority] || 0;
+        const valB = weight[b.Priority] || 0;
+        
+        // If priorities are different, sort by priority
+        if (valA !== valB) return valB - valA; 
+        
+        // If priorities are the SAME, fallback to sorting by Newest Date
+        return dateB - dateA;
+      }
+      return 0;
+    });
+
+    // 3. COMPUTE METRICS
     const totalCount = filteredArticles.length;
-    let highCount = 0;
-    let mediumCount = 0;
-    let lowCount = 0;
+    let highCount = 0, mediumCount = 0, lowCount = 0;
 
     filteredArticles.forEach(article => {
       const priorityVal = (article.Priority || '').toLowerCase().trim();
@@ -454,7 +447,6 @@ async function loadNews() {
       else lowCount++;
     });
 
-    // Bind metrics cleanly to the top summary layout cards
     document.getElementById('stat-total-articles').innerText = totalCount;
     document.getElementById('stat-priority-breakdown').innerHTML = `
       <span style="color: #b91c1c;">High | ${highCount}</span> &nbsp;&bull;&nbsp; 
@@ -463,12 +455,12 @@ async function loadNews() {
     `;
 
     if (filteredArticles.length === 0) {
-      newsFeedSection.innerHTML += `<p style="padding: 20px; color: #6b7280; text-align: center;">No articles found for this date.</p>`;
-      contentPanel.innerHTML += `<p style="padding: 20px; color: #6b7280; text-align: center;">No content opportunities today.</p>`;
+      newsFeedSection.innerHTML += `<p style="padding: 20px; color: #6b7280; text-align: center;">No articles match your filters.</p>`;
+      contentPanel.innerHTML += `<p style="padding: 20px; color: #6b7280; text-align: center;">No content opportunities match.</p>`;
       return;
     }
 
-    // 3. Render the Main News Feed
+    // 4. RENDER NEWS FEED
     filteredArticles.forEach(article => {
       let priorityClass = article.Priority === 'High' ? 'priority-high' : 'priority-medium';
       const safeTags = article.Tags ? article.Tags : 'No Tags';
@@ -493,7 +485,7 @@ async function loadNews() {
       newsFeedSection.innerHTML += articleHTML;
     });
 
-    // 4. Sort articles dynamically into Content Opportunities
+    // 5. RENDER CONTENT OPPORTUNITIES (Based on filtered results)
     let digestArt, linkedinArt, newsletterArt, salesArt;
     const hasTag = (article, tagArray) => {
       if (!article.Tags) return false;
@@ -514,6 +506,7 @@ async function loadNews() {
     salesArt = salesArt || filteredArticles[3 % filteredArticles.length];
 
     const createOpportunityBox = (title, article) => {
+      if (!article) return ''; // Safety check if there are zero articles
       const url = article.Link || article.link || '#';
       return `
         <div class="content-box">
@@ -534,7 +527,6 @@ async function loadNews() {
   } catch (error) {
     console.error('Failed to load news:', error);
     newsFeedSection.innerHTML = `<h3>Latest News Feed</h3><p style="padding: 20px; color: #dc2626;">Error loading articles.</p>`;
-    contentPanel.innerHTML = `<h3>Content Opportunities</h3><p style="padding: 20px; color: #dc2626;">Error loading opportunities.</p>`;
   }
 }
 
