@@ -540,24 +540,24 @@ document.getElementById('email-btn').addEventListener('click', async () => {
 
   // 1. Ask the user for the destination email
   const recipient = prompt("Enter the email address you want to send this brief to:");
-  if (!recipient) return; // Stop if they click cancel
+  if (!recipient) return; 
 
-  // Show loading state on the button
+  // Show loading state
   button.innerText = 'Sending...';
   button.style.opacity = '0.7';
   button.style.cursor = 'wait';
 
-  // 2. Gather the KPI data directly from the active dashboard cards
+  // 2. Gather the KPI data 
   const totalArticles = document.getElementById('stat-total-articles').innerText;
   const priorityBreakdown = document.getElementById('stat-priority-breakdown').innerText.replace(/\n/g, ' '); 
   const date = document.getElementById('date-filter').value;
 
-  // 3. Gather the Content Opportunities
+  // 3. Gather Content Opportunities and wrap them in HTML styling
   const contentBoxes = document.querySelectorAll('.content-box');
-  let opportunitiesText = '';
+  let opportunitiesHTML = '';
   
   if (contentBoxes.length === 0) {
-    opportunitiesText = "No content opportunities matched the current filters.\n";
+    opportunitiesHTML = "<p style='color: #6b7280;'>No content opportunities matched the current filters.</p>";
   } else {
     contentBoxes.forEach(box => {
       const category = box.querySelector('h4').innerText;
@@ -565,39 +565,69 @@ document.getElementById('email-btn').addEventListener('click', async () => {
       const link = box.querySelector('a').href;
       const summary = box.querySelector('p:last-of-type').innerText;
       
-      opportunitiesText += `[${category}]\nHeadline: ${headline}\nLink: ${link}\nSummary: ${summary}\n\n`;
+      opportunitiesHTML += `
+        <div style="margin-bottom: 24px;">
+          <span style="display: inline-block; background-color: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; margin-bottom: 8px;">${category}</span>
+          <h4 style="margin: 0 0 6px 0; font-size: 16px; line-height: 1.4;">
+            <a href="${link}" style="color: #111827; text-decoration: none; font-weight: 600;">${headline}</a>
+          </h4>
+          <p style="margin: 0; color: #4b5563; font-size: 14px; line-height: 1.5;">${summary}</p>
+        </div>
+      `;
     });
   }
 
-  // 4. Build the payload to send to n8n
+  // 4. Build the master HTML email payload
+  const htmlMessage = `
+    <div style="background-color: #f5f7fb; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden;">
+        
+        <div style="padding: 30px; text-align: center; border-bottom: 1px solid #f3f4f6;">
+          <img src="https://restaurantassociation.com/wp-content/uploads/2024/02/Restaurant-Association-Logo-Vector-2.png" alt="Brand Logo" style="max-height: 50px; display: block; margin: 0 auto;" onerror="this.style.display='none';">
+          <h2 style="color: #111827; margin: 20px 0 0 0; font-size: 24px; font-weight: 700;">Executive News Brief</h2>
+          <p style="color: #6b7280; font-size: 14px; margin-top: 5px;">${date}</p>
+        </div>
+        
+        <div style="padding: 30px;">
+          
+          <h3 style="color: #0f766e; font-size: 15px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px;">Daily KPIs</h3>
+          <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 30px; border: 1px solid #f3f4f6;">
+            <p style="margin: 0 0 10px 0; color: #374151;"><strong>New Articles Found:</strong> <span style="color: #111827;">${totalArticles}</span></p>
+            <p style="margin: 0; color: #374151;"><strong>Priority Breakdown:</strong> <span style="color: #111827;">${priorityBreakdown}</span></p>
+          </div>
+
+          <h3 style="color: #0f766e; font-size: 15px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px;">Content Opportunities</h3>
+          ${opportunitiesHTML}
+          
+        </div>
+
+        <div style="padding: 30px; background-color: #f9fafb; text-align: center; border-top: 1px solid #f3f4f6;">
+          <a href="https://bcroucher69.github.io/restaurant_news_dashboard_layout/" style="display: inline-block; background-color: #0f766e; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">View Live Dashboard</a>
+        </div>
+        
+      </div>
+    </div>
+  `;
+
   const payload = {
     recipient: recipient,
     subject: `Daily Industry News Brief - ${date}`,
-    message: `Here is your Executive News Brief for ${date}:\n\n` +
-             `--- DAILY KPIs ---\n` +
-             `New Articles Found: ${totalArticles}\n` +
-             `Priority Breakdown: ${priorityBreakdown}\n\n` +
-             `--- CONTENT OPPORTUNITIES ---\n\n` +
-             `${opportunitiesText}` +
-             `\nView the full live dashboard here: https://bcroucher69.github.io/restaurant_news_dashboard_layout/`
+    message: htmlMessage
   };
 
   try {
-    // 5. PASTE YOUR NEW N8N "EMAIL API" WEBHOOK URL HERE
-    const emailWebhookUrl = 'https://sa1.altametrics.com/webhook/65dc2966-6fd6-491d-8826-e223b0b557fa';
+    // 5. Ensure your n8n Email API Webhook URL is pasted here!
+    const emailWebhookUrl = 'YOUR_NEW_EMAIL_WEBHOOK_URL_HERE'; 
     
-    // Send the data securely to n8n
     const response = await fetch(emailWebhookUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
 
     if (response.ok) {
       button.innerText = 'Email Sent!';
-      button.style.backgroundColor = '#0f766e'; // Success green
+      button.style.backgroundColor = '#0f766e'; 
       button.style.color = 'white';
     } else {
       throw new Error('Failed to send');
@@ -605,11 +635,11 @@ document.getElementById('email-btn').addEventListener('click', async () => {
   } catch (error) {
     console.error('Email API Error:', error);
     button.innerText = 'Send Failed';
-    button.style.backgroundColor = '#991b1b'; // Error red
+    button.style.backgroundColor = '#991b1b'; 
     button.style.color = 'white';
   }
 
-  // 6. Reset the button after 3 seconds
+  // 6. Reset button
   setTimeout(() => {
     button.innerText = originalText;
     button.style.opacity = '1';
