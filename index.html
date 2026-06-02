@@ -585,12 +585,6 @@ async function loadNews() {
   const selectedSort = document.getElementById('sort-filter').value;
   const searchQuery = document.getElementById('search-filter').value.toLowerCase();
   
-  // Set Date/Time KPI
-  const cachedTime = localStorage.getItem('dashboard_pst_time') || 'Pending...';
-  const cachedDate = localStorage.getItem('dashboard_pst_date') || '-';
-  document.getElementById('stat-last-updated').innerText = cachedTime + (cachedTime !== 'Pending...' ? ' PST' : '');
-  document.getElementById('stat-date-display').innerText = cachedDate;
-  
   feedContainer.innerHTML = `<div style="padding:24px; text-align:center; background:white; border:1px solid var(--border); border-top:none; border-radius: 0 0 16px 16px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading articles...</div>`;
 
   try {
@@ -598,6 +592,19 @@ async function loadNews() {
     const data = await response.json();
     feedContainer.innerHTML = '';
     oppContainer.innerHTML = '';
+
+    // --- NEW: DYNAMIC 'LAST UPDATED' KPI ---
+    // Instead of local storage, we pull the exact date/time from the newest article in your database
+    if (data && data.length > 0) {
+      const sortedData = [...data].sort((a, b) => new Date(b['Date Found']) - new Date(a['Date Found']));
+      const newestDateObj = new Date(sortedData[0]['Date Found']);
+      
+      document.getElementById('stat-date-display').innerText = newestDateObj.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles', dateStyle: 'medium' });
+      document.getElementById('stat-last-updated').innerText = newestDateObj.toLocaleTimeString('en-US', { timeZone: 'America/Los_Angeles', timeStyle: 'short' }) + ' PST';
+    } else {
+      document.getElementById('stat-date-display').innerText = 'No Data';
+      document.getElementById('stat-last-updated').innerText = '-';
+    }
 
     // FILTERING
     let filteredArticles = data.filter(article => {
