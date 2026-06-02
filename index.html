@@ -217,7 +217,7 @@
       </div>
       <div class="actions">
         <button id="fetch-btn" class="primary">Fetch News Now</button>
-        <button class="secondary">Export Summary</button>
+        <button id="export-btn" class="secondary">Export Summary</button>
         <button id="email-btn" class="header-button-class">Email Brief</button>
       </div>
     </header>
@@ -697,6 +697,81 @@ document.getElementById('email-btn').addEventListener('click', async () => {
     button.style.cursor = 'pointer';
     button.style.backgroundColor = '';
     button.style.color = '';
+  }, 3000);
+});
+
+// Attach the Export Summary generator to the button
+document.getElementById('export-btn').addEventListener('click', () => {
+  const button = document.getElementById('export-btn');
+  const originalText = button.innerText;
+
+  // Show loading state
+  button.innerText = 'Exporting...';
+  button.style.opacity = '0.7';
+
+  // 1. Gather the KPI data 
+  const totalArticles = document.getElementById('stat-total-articles').innerText;
+  const priorityBreakdown = document.getElementById('stat-priority-breakdown').innerText.replace(/\n/g, ' '); 
+  const date = document.getElementById('date-filter').value;
+
+  // 2. Gather Content Opportunities
+  const contentBoxes = document.querySelectorAll('.content-box');
+  let opportunitiesText = '';
+  
+  if (contentBoxes.length === 0) {
+    opportunitiesText = "No content opportunities matched the current filters.\n";
+  } else {
+    contentBoxes.forEach(box => {
+      const category = box.querySelector('h4').innerText;
+      const headline = box.querySelector('a').innerText.replace(' ↗', ''); 
+      const link = box.querySelector('a').href;
+      const summary = box.querySelector('p:last-of-type').innerText;
+      
+      opportunitiesText += `[${category}]\nHeadline: ${headline}\nLink: ${link}\nSummary: ${summary}\n\n`;
+    });
+  }
+
+  // 3. Build the Text Document formatting
+  const reportContent = 
+    `====================================================\n` +
+    `  RESTAURANT INDUSTRY EXECUTIVE SUMMARY \n` +
+    `  Date: ${date}\n` +
+    `====================================================\n\n` +
+    `--- DAILY KPIs ---\n` +
+    `New Articles Found: ${totalArticles}\n` +
+    `Priority Breakdown: ${priorityBreakdown}\n\n` +
+    `--- CONTENT OPPORTUNITIES ---\n\n` +
+    `${opportunitiesText}\n` +
+    `====================================================\n` +
+    `Generated via Restaurant Association News Dashboard\n`;
+
+  // 4. Create a Blob (File) and trigger the download
+  const blob = new Blob([reportContent], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `RA_Executive_Summary_${date}.txt`; // Names the file with today's date
+  
+  document.body.appendChild(a);
+  a.click(); // Automatically clicks the hidden link to start download
+  
+  // Cleanup
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  // 5. Reset button visually to show success
+  button.innerText = 'Export Downloaded!';
+  button.style.backgroundColor = '#0f766e'; 
+  button.style.color = 'white';
+  button.style.borderColor = '#0f766e';
+
+  setTimeout(() => {
+    button.innerText = originalText;
+    button.style.opacity = '1';
+    button.style.backgroundColor = '';
+    button.style.color = '';
+    button.style.borderColor = '';
   }, 3000);
 });
 </script>
