@@ -398,6 +398,63 @@
     
     .opp-desc { margin: 0; font-size: 12px; color: var(--text-muted); line-height: 1.5; }
 
+/* --- RESPONSIVE DESIGN (TABLETS & MOBILE) --- */
+    
+    /* TABLET SCREENS (Laptops and iPads) */
+    @media (max-width: 1200px) {
+      .layout {
+        grid-template-columns: 1fr; /* Stacks the sidebar, feed, and opportunities vertically */
+      }
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr); /* Turns the 4 KPIs into a 2x2 grid */
+      }
+      .filters {
+        grid-template-columns: repeat(3, 1fr); /* Allows filters to wrap gracefully */
+      }
+      .filter-wrapper {
+        grid-column: span 3; /* Makes the search bar take up the full top row of filters */
+      }
+    }
+
+    /* MOBILE SCREENS (Phones) */
+    @media (max-width: 768px) {
+      .dashboard {
+        padding: 16px; /* Reduces the outer whitespace to give more room for text */
+      }
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+      }
+      .header p {
+        line-height: 1.5; /* Makes the subtitle easier to read when it wraps */
+      }
+      .actions {
+        width: 100%;
+        flex-direction: column; /* Stacks the top buttons */
+      }
+      .actions button {
+        width: 100%;
+        justify-content: center; /* Centers the button text and icons */
+      }
+      .stats-grid {
+        grid-template-columns: 1fr; /* Stacks all KPIs into a single column */
+      }
+      .filters {
+        grid-template-columns: 1fr; /* Stacks all dropdowns */
+      }
+      .filter-wrapper {
+        grid-column: span 1; 
+      }
+      .article-card {
+        padding: 16px; /* Slightly tighter padding for mobile feeds */
+      }
+      .bookmark-btn {
+        top: 16px;
+        right: 16px;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -406,7 +463,7 @@
     <header class="header">
       <div>
         <h1>Restaurant Industry News Dashboard</h1>
-        <p>Real-time insights. Smarter content. Stay ahead. &nbsp;&bull;&nbsp; Auto-refreshes every 2 hours</p>
+        <p>Real-time insights. Smarter content. Stay ahead.</p>
       </div>
       <div class="actions">
         <button id="fetch-btn" class="primary"><i class="fa-solid fa-satellite-dish"></i> Fetch News Now</button>
