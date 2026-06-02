@@ -370,24 +370,31 @@ document.getElementById('fetch-btn').addEventListener('click', async () => {
   button.style.opacity = '0.7';
   button.style.cursor = 'wait';
 
-  try {
-    // CHANGED FROM 'POST' TO 'GET' TO MATCH YOUR n8n WEBHOOK METHOD
-    const response = await fetch(readApiUrl, { method: 'GET' });
+ try {
+    const fetchApiUrl = 'https://sa1.altametrics.com/webhook/309d7b12-beed-4bf9-8291-db641d33bb50';
+    
+    // CHANGED TO POST AND ADDED EMPTY PAYLOAD TO PREVENT 405 ERRORS
+    const response = await fetch(fetchApiUrl, { 
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ trigger: "dashboard_manual_click" })
+    });
 
     if (response.ok) {
       button.innerText = 'News Fetched Successfully!';
       button.style.backgroundColor = '#0f766e';
       button.style.color = 'white';
 
-      // Record operational execution inside PST bounds
       const pstOptions = { timeZone: 'America/Los_Angeles', dateStyle: 'short', timeStyle: 'short' };
       const formattedPstDateTime = new Date().toLocaleString('en-US', pstOptions);
       localStorage.setItem('dashboard_pst_last_updated', formattedPstDateTime);
 
-      // Force view refresh
+      // Reload the view to display the newly pulled items
       loadNews();
     } else {
-      throw new Error('Webhook processing returned an error structure');
+      throw new Error(`Server responded with status: ${response.status}`);
     }
   } catch (error) {
     console.error('Fetch execution error:', error);
