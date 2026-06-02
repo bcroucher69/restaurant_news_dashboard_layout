@@ -534,17 +534,21 @@ async function loadNews() {
 window.addEventListener('DOMContentLoaded', loadNews); 
 
 // Attach the Email Brief generator to the button
-document.getElementById('email-btn').addEventListener('click', () => {
+document.getElementById('email-btn').addEventListener('click', async () => {
+  const button = document.getElementById('email-btn');
+  const originalText = button.innerText;
+
   // 1. Ask the user for the destination email
   const recipient = prompt("Enter the email address you want to send this brief to:");
-  
-  // If they click cancel or leave it blank, stop the function safely
-  if (!recipient) return;
+  if (!recipient) return; // Stop if they click cancel
+
+  // Show loading state on the button
+  button.innerText = 'Sending...';
+  button.style.opacity = '0.7';
+  button.style.cursor = 'wait';
 
   // 2. Gather the KPI data directly from the active dashboard cards
   const totalArticles = document.getElementById('stat-total-articles').innerText;
-  
-  // Grab the priority text and clean up any weird HTML line breaks
   const priorityBreakdown = document.getElementById('stat-priority-breakdown').innerText.replace(/\n/g, ' '); 
   const date = document.getElementById('date-filter').value;
 
@@ -555,10 +559,9 @@ document.getElementById('email-btn').addEventListener('click', () => {
   if (contentBoxes.length === 0) {
     opportunitiesText = "No content opportunities matched the current filters.\n";
   } else {
-    // Loop through each panel and extract the text cleanly
     contentBoxes.forEach(box => {
       const category = box.querySelector('h4').innerText;
-      const headline = box.querySelector('a').innerText.replace(' ↗', ''); // Remove the UI arrow
+      const headline = box.querySelector('a').innerText.replace(' ↗', ''); 
       const link = box.querySelector('a').href;
       const summary = box.querySelector('p:last-of-type').innerText;
       
@@ -566,22 +569,54 @@ document.getElementById('email-btn').addEventListener('click', () => {
     });
   }
 
-  // 4. Build the Email Subject and Body structure
-  const subject = encodeURIComponent(`Daily Industry News Brief - ${date}`);
-  
-  const bodyText = `Here is your Executive News Brief for ${date}:\n\n` +
-                   `--- DAILY KPIs ---\n` +
-                   `New Articles Found: ${totalArticles}\n` +
-                   `Priority Breakdown: ${priorityBreakdown}\n\n` +
-                   `--- CONTENT OPPORTUNITIES ---\n\n` +
-                   `${opportunitiesText}` +
-                   `\nView the full live dashboard here: https://bcroucher69.github.io/restaurant_news_dashboard_layout/`;
-                   
-  // Encode the body text so it renders properly in email clients
-  const body = encodeURIComponent(bodyText);
+  // 4. Build the payload to send to n8n
+  const payload = {
+    recipient: recipient,
+    subject: `Daily Industry News Brief - ${date}`,
+    message: `Here is your Executive News Brief for ${date}:\n\n` +
+             `--- DAILY KPIs ---\n` +
+             `New Articles Found: ${totalArticles}\n` +
+             `Priority Breakdown: ${priorityBreakdown}\n\n` +
+             `--- CONTENT OPPORTUNITIES ---\n\n` +
+             `${opportunitiesText}` +
+             `\nView the full live dashboard here: https://bcroucher69.github.io/restaurant_news_dashboard_layout/`
+  };
 
-  // 5. Trigger the default mail client to open
-  window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
+  try {
+    // 5. PASTE YOUR NEW N8N "EMAIL API" WEBHOOK URL HERE
+    const emailWebhookUrl = 'https://sa1.altametrics.com/webhook/65dc2966-6fd6-491d-8826-e223b0b557fa';
+    
+    // Send the data securely to n8n
+    const response = await fetch(emailWebhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (response.ok) {
+      button.innerText = 'Email Sent!';
+      button.style.backgroundColor = '#0f766e'; // Success green
+      button.style.color = 'white';
+    } else {
+      throw new Error('Failed to send');
+    }
+  } catch (error) {
+    console.error('Email API Error:', error);
+    button.innerText = 'Send Failed';
+    button.style.backgroundColor = '#991b1b'; // Error red
+    button.style.color = 'white';
+  }
+
+  // 6. Reset the button after 3 seconds
+  setTimeout(() => {
+    button.innerText = originalText;
+    button.style.opacity = '1';
+    button.style.cursor = 'pointer';
+    button.style.backgroundColor = '';
+    button.style.color = '';
+  }, 3000);
 });
  
 </script>
