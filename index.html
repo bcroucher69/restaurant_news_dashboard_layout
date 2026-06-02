@@ -218,7 +218,7 @@
       <div class="actions">
         <button id="fetch-btn" class="primary">Fetch News Now</button>
         <button class="secondary">Export Summary</button>
-        <button class="secondary">Email Brief</button>
+        <button id="email-btn" class="header-button-class">Email Brief</button>
       </div>
     </header>
 
@@ -532,6 +532,57 @@ async function loadNews() {
 
 // Automatically load the news when the dashboard opens
 window.addEventListener('DOMContentLoaded', loadNews); 
+
+// Attach the Email Brief generator to the button
+document.getElementById('email-btn').addEventListener('click', () => {
+  // 1. Ask the user for the destination email
+  const recipient = prompt("Enter the email address you want to send this brief to:");
+  
+  // If they click cancel or leave it blank, stop the function safely
+  if (!recipient) return;
+
+  // 2. Gather the KPI data directly from the active dashboard cards
+  const totalArticles = document.getElementById('stat-total-articles').innerText;
+  
+  // Grab the priority text and clean up any weird HTML line breaks
+  const priorityBreakdown = document.getElementById('stat-priority-breakdown').innerText.replace(/\n/g, ' '); 
+  const date = document.getElementById('date-filter').value;
+
+  // 3. Gather the Content Opportunities
+  const contentBoxes = document.querySelectorAll('.content-box');
+  let opportunitiesText = '';
+  
+  if (contentBoxes.length === 0) {
+    opportunitiesText = "No content opportunities matched the current filters.\n";
+  } else {
+    // Loop through each panel and extract the text cleanly
+    contentBoxes.forEach(box => {
+      const category = box.querySelector('h4').innerText;
+      const headline = box.querySelector('a').innerText.replace(' ↗', ''); // Remove the UI arrow
+      const link = box.querySelector('a').href;
+      const summary = box.querySelector('p:last-of-type').innerText;
+      
+      opportunitiesText += `[${category}]\nHeadline: ${headline}\nLink: ${link}\nSummary: ${summary}\n\n`;
+    });
+  }
+
+  // 4. Build the Email Subject and Body structure
+  const subject = encodeURIComponent(`Daily Industry News Brief - ${date}`);
+  
+  const bodyText = `Here is your Executive News Brief for ${date}:\n\n` +
+                   `--- DAILY KPIs ---\n` +
+                   `New Articles Found: ${totalArticles}\n` +
+                   `Priority Breakdown: ${priorityBreakdown}\n\n` +
+                   `--- CONTENT OPPORTUNITIES ---\n\n` +
+                   `${opportunitiesText}` +
+                   `\nView the full live dashboard here: https://bcroucher69.github.io/restaurant_news_dashboard_layout/`;
+                   
+  // Encode the body text so it renders properly in email clients
+  const body = encodeURIComponent(bodyText);
+
+  // 5. Trigger the default mail client to open
+  window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
+});
  
 </script>
 </html>
