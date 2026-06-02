@@ -359,7 +359,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 const readApiUrl = 'https://sa1.altametrics.com/webhook/c830dfa0-8df4-473b-b416-1f261beff41c';
 
-// --- RESTORED FETCH NEWS ENGINE ---
+// --- FIXED FETCH NEWS ENGINE ---
 document.getElementById('fetch-btn').addEventListener('click', async () => {
   const button = document.getElementById('fetch-btn');
   const originalText = button.innerText;
@@ -370,8 +370,8 @@ document.getElementById('fetch-btn').addEventListener('click', async () => {
   button.style.cursor = 'wait';
 
   try {
-    // Send a trigger to n8n to start processing feeds
-    const response = await fetch(readApiUrl, { method: 'POST' });
+    // CHANGED FROM 'POST' TO 'GET' TO MATCH YOUR n8n WEBHOOK METHOD
+    const response = await fetch(readApiUrl, { method: 'GET' });
 
     if (response.ok) {
       button.innerText = 'News Fetched Successfully!';
