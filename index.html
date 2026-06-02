@@ -272,16 +272,9 @@
     <div class="layout">
       <aside class="card source-list">
         <h3>Sources Monitored</h3>
-        <div class="source-item"><span>NRN</span><span class="source-status">Active</span></div>
-        <div class="source-item"><span>CalRestaurant</span><span class="source-status">Active</span></div>
-        <div class="source-item"><span>Texas Restaurant Show</span><span class="source-status">Active</span></div>
-        <div class="source-item"><span>Restaurant Dive</span><span class="source-status">Active</span></div>
-        <div class="source-item"><span>Restaurant Business</span><span class="source-status">Active</span></div>
-        <div class="source-item"><span>QSR Magazine</span><span class="source-status">Active</span></div>
-        <div class="source-item"><span>FSR Magazine</span><span class="source-status">Active</span></div>
-        <div class="source-item"><span>Franchise Times</span><span class="source-status">Active</span></div>
-        <div class="source-item"><span>Restaurant HQ</span><span class="source-status">Active</span></div>
-        <div class="source-item"><span>WebstaurantStore</span><span class="source-status">Active</span></div>
+        <div id="dynamic-source-list">
+          <p style="color: #6b7280; font-size: 14px;">Loading sources...</p>
+        </div>
       </aside>
 
       <main class="main-grid">
@@ -511,6 +504,45 @@ async function loadNews() {
       contentPanel.innerHTML += `<p style="padding: 20px; color: #6b7280; text-align: center;">No content opportunities match.</p>`;
       return;
     }
+
+// --- NEW: DYNAMIC SOURCES LIST ---
+    const allSources = [
+      "NRN", "CalRestaurant", "Texas Restaurant Show",
+      "Restaurant Dive", "Restaurant Business", "QSR Magazine",
+      "FSR Magazine", "Franchise Times", "Restaurant HQ", "WebstaurantStore"
+    ];
+
+    // Count how many articles each source has in the filtered data
+    const sourceCounts = {};
+    allSources.forEach(src => sourceCounts[src] = 0); 
+    
+    filteredArticles.forEach(article => {
+      // Ensure we match the source exactly as it's typed in the array
+      if (sourceCounts[article.Source] !== undefined) {
+        sourceCounts[article.Source]++;
+      }
+    });
+
+    // Render the list to the sidebar
+    const sourceListContainer = document.getElementById('dynamic-source-list');
+    sourceListContainer.innerHTML = '';
+
+    allSources.forEach(src => {
+      const count = sourceCounts[src];
+      
+      // If it has articles, show a blue pill badge. If 0, show grey text.
+      const statusHTML = count > 0 
+        ? `<span style="background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">${count} Articles</span>` 
+        : `<span style="color: #9ca3af; font-size: 12px; font-weight: 600;">Standby</span>`;
+      
+      sourceListContainer.innerHTML += `
+        <div class="source-item">
+          <span style="color: ${count > 0 ? '#111827' : '#9ca3af'}; font-weight: ${count > 0 ? '600' : '400'};">${src}</span>
+          ${statusHTML}
+        </div>
+      `;
+    });
+    // ---------------------------------
 
     // 4. RENDER NEWS FEED
     filteredArticles.forEach(article => {
