@@ -225,12 +225,10 @@
     <section class="stats-grid">
       <div class="card">
         <div>New Articles Found</div>
-        <!-- Added ID handle for dynamic calculations -->
         <div class="stat-number" id="stat-total-articles">0</div>
       </div>
       <div class="card">
         <div>Articles Breakdown by Priority</div>
-        <!-- Adjusted font size to fit your horizontal formatting clean and un-cropped -->
         <div class="stat-number" id="stat-priority-breakdown" style="font-size: 16px; margin-top: 14px; font-weight: 600; line-height: 1.4;">
           <span style="color: #b91c1c;">High | 0</span> &nbsp;&bull;&nbsp; 
           <span style="color: #b45309;">Medium | 0</span> &nbsp;&bull;&nbsp; 
@@ -243,16 +241,13 @@
       </div>
       <div class="card">
         <div>Last Updated (PST)</div>
-        <!-- Added ID handle and set font size for an informative date/time string -->
         <div class="stat-number" id="stat-last-updated" style="font-size: 15px; margin-top: 14px; color: #374151; font-weight: 600;">Never</div>
       </div>
     </section>
 
     <section class="filters">
       <input type="text" id="search-filter" placeholder="Search headlines, topics, brands..." />
-      
       <input type="date" id="date-filter" />
-      
       <select id="source-filter">
         <option value="All">All Sources</option>
         <option value="NRN">NRN</option>
@@ -261,14 +256,12 @@
         <option value="FSR Magazine">FSR Magazine</option>
         <option value="Franchise Times">Franchise Times</option>
       </select>
-      
       <select id="priority-filter">
         <option value="All">All Priority</option>
         <option value="High">High</option>
         <option value="Medium">Medium</option>
         <option value="Low">Low</option>
       </select>
-      
       <select id="sort-filter">
         <option value="Newest">Newest First</option>
         <option value="Oldest">Oldest First</option>
@@ -349,7 +342,7 @@
   </div>
 </body>
 <script>
-	// Automatically set the calendar and attach listeners to ALL filters
+// Automatically set the calendar and attach listeners to ALL filters
 window.addEventListener('DOMContentLoaded', () => {
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('date-filter').value = today;
@@ -362,6 +355,54 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('search-filter').addEventListener('input', loadNews); // Triggers as you type
   
   loadNews(); // Initial load
+});
+
+const readApiUrl = 'https://sa1.altametrics.com/webhook/c830dfa0-8df4-473b-b416-1f261beff41c';
+
+// --- RESTORED FETCH NEWS ENGINE ---
+document.getElementById('fetch-btn').addEventListener('click', async () => {
+  const button = document.getElementById('fetch-btn');
+  const originalText = button.innerText;
+
+  // Set visual loading state
+  button.innerText = 'Fetching News...';
+  button.style.opacity = '0.7';
+  button.style.cursor = 'wait';
+
+  try {
+    // Send a trigger to n8n to start processing feeds
+    const response = await fetch(readApiUrl, { method: 'POST' });
+
+    if (response.ok) {
+      button.innerText = 'News Fetched Successfully!';
+      button.style.backgroundColor = '#0f766e';
+      button.style.color = 'white';
+
+      // Record operational execution inside PST bounds
+      const pstOptions = { timeZone: 'America/Los_Angeles', dateStyle: 'short', timeStyle: 'short' };
+      const formattedPstDateTime = new Date().toLocaleString('en-US', pstOptions);
+      localStorage.setItem('dashboard_pst_last_updated', formattedPstDateTime);
+
+      // Force view refresh
+      loadNews();
+    } else {
+      throw new Error('Webhook processing returned an error structure');
+    }
+  } catch (error) {
+    console.error('Fetch execution error:', error);
+    button.innerText = 'Fetch Failed';
+    button.style.backgroundColor = '#991b1b';
+    button.style.color = 'white';
+  }
+
+  // Soft delay to reset layout controls
+  setTimeout(() => {
+    button.innerText = originalText;
+    button.style.opacity = '1';
+    button.style.cursor = 'pointer';
+    button.style.backgroundColor = '';
+    button.style.color = '';
+  }, 4000);
 });
 
 // Function to load, filter, sort, and display news
@@ -383,7 +424,6 @@ async function loadNews() {
   newsFeedSection.innerHTML = `<h3>Latest News Feed</h3><p style="padding: 20px; color: #6b7280;">Loading filtered articles...</p>`;
 
   try {
-    const readApiUrl = 'https://sa1.altametrics.com/webhook/c830dfa0-8df4-473b-b416-1f261beff41c';
     const response = await fetch(readApiUrl);
     const data = await response.json();
 
@@ -506,7 +546,7 @@ async function loadNews() {
     salesArt = salesArt || filteredArticles[3 % filteredArticles.length];
 
     const createOpportunityBox = (title, article) => {
-      if (!article) return ''; // Safety check if there are zero articles
+      if (!article) return ''; 
       const url = article.Link || article.link || '#';
       return `
         <div class="content-box">
@@ -583,7 +623,7 @@ document.getElementById('email-btn').addEventListener('click', async () => {
       <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden;">
         
         <div style="padding: 30px; text-align: center; border-bottom: 1px solid #f3f4f6;">
-          <img src="https://restaurantassociation.com/wp-content/uploads/2024/02/Restaurant-Association-Logo-Vector-2.png" alt="Brand Logo" style="max-height: 50px; display: block; margin: 0 auto;" onerror="this.style.display='none';">
+          <img src="https://g1.restaurantassociation.com/media/images/RA-Newsletter/May-26/RA-Logo-Black.png" alt="Brand Logo" style="max-height: 50px; display: block; margin: 0 auto;" onerror="this.style.display='none';">
           <h2 style="color: #111827; margin: 20px 0 0 0; font-size: 24px; font-weight: 700;">Executive News Brief</h2>
           <p style="color: #6b7280; font-size: 14px; margin-top: 5px;">${date}</p>
         </div>
@@ -616,7 +656,6 @@ document.getElementById('email-btn').addEventListener('click', async () => {
   };
 
   try {
-    // 5. Ensure your n8n Email API Webhook URL is pasted here!
     const emailWebhookUrl = 'https://sa1.altametrics.com/webhook/65dc2966-6fd6-491d-8826-e223b0b557fa'; 
     
     const response = await fetch(emailWebhookUrl, {
@@ -639,7 +678,7 @@ document.getElementById('email-btn').addEventListener('click', async () => {
     button.style.color = 'white';
   }
 
-  // 6. Reset button
+  // Reset button
   setTimeout(() => {
     button.innerText = originalText;
     button.style.opacity = '1';
@@ -648,6 +687,5 @@ document.getElementById('email-btn').addEventListener('click', async () => {
     button.style.color = '';
   }, 3000);
 });
- 
 </script>
 </html>
