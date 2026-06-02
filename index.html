@@ -408,6 +408,9 @@ document.getElementById('fetch-btn').addEventListener('click', async () => {
 
 // Function to load, filter, sort, and display news
 async function loadNews() {
+  // 1. ADD THIS LINE RIGHT HERE SO IT NEVER GETS LOST
+  const readApiUrl = 'https://sa1.altametrics.com/webhook/c830dfa0-8df4-473b-b416-1f261beff41c';
+  
   const newsFeedSection = document.querySelector('.news-feed');
   const contentPanel = document.querySelector('.content-panel');
   
@@ -425,12 +428,13 @@ async function loadNews() {
   newsFeedSection.innerHTML = `<h3>Latest News Feed</h3><p style="padding: 20px; color: #6b7280;">Loading filtered articles...</p>`;
 
   try {
+    // 2. NOW IT KNOWS EXACTLY WHAT URL TO FETCH FROM
     const response = await fetch(readApiUrl);
     const data = await response.json();
 
     newsFeedSection.innerHTML = `<h3>Latest News Feed</h3>`;
     contentPanel.innerHTML = `<h3>Content Opportunities</h3>`;
-
+   
     // 1. FILTERING ENGINE
     let filteredArticles = data.filter(article => {
       // Date Filter
