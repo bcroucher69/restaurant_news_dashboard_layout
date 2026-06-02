@@ -753,27 +753,187 @@ async function loadNews() {
 
 // EXPORT
 document.getElementById('export-btn').addEventListener('click', () => {
+  const button = document.getElementById('export-btn');
+  const originalText = button.innerHTML;
+
+  // Show loading state with the new FontAwesome icons
+  button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Exporting...';
+  button.style.opacity = '0.7';
+
+  // 1. Gather the KPI data 
+  const totalArticles = document.getElementById('stat-total-articles').innerText;
+  
+  // Clean up the new priority HTML formatting so it reads nicely in text (e.g., "0 High 0 Medium 0 Low")
+  let priorityBreakdown = document.getElementById('stat-priority-breakdown').innerText;
+  priorityBreakdown = priorityBreakdown.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim(); 
+  
   const date = document.getElementById('date-filter').value;
-  const content = `Executive Summary\nDate: ${date}\nData exported successfully.`;
-  const blob = new Blob([content], { type: 'text/plain' });
+
+  // 2. Gather Content Opportunities using the NEW CSS classes
+  const oppCards = document.querySelectorAll('.opp-card');
+  let opportunitiesText = '';
+  
+  if (oppCards.length === 0) {
+    opportunitiesText = "No content opportunities matched the current filters.\n";
+  } else {
+    oppCards.forEach(card => {
+      // Pulling data from the updated UI structure
+      const category = card.querySelector('.opp-header').innerText.trim();
+      const headline = card.querySelector('.opp-title').innerText.trim();
+      const link = card.querySelector('.opp-title a').href;
+      const summary = card.querySelector('.opp-desc').innerText.trim();
+      
+      opportunitiesText += `[${category}]\nHeadline: ${headline}\nLink: ${link}\nSummary: ${summary}\n\n`;
+    });
+  }
+
+  // 3. Build the Text Document formatting
+  const reportContent = 
+    `====================================================\n` +
+    `  RESTAURANT INDUSTRY EXECUTIVE SUMMARY \n` +
+    `  Date: ${date}\n` +
+    `====================================================\n\n` +
+    `--- DAILY KPIs ---\n` +
+    `New Articles Found: ${totalArticles}\n` +
+    `Priority Breakdown: ${priorityBreakdown}\n\n` +
+    `--- CONTENT OPPORTUNITIES ---\n\n` +
+    `${opportunitiesText}` +
+    `====================================================\n` +
+    `Generated via Restaurant Association News Dashboard\n`;
+
+  // 4. Create a Blob (File) and trigger the download
+  const blob = new Blob([reportContent], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `Summary_${date}.txt`;
-  a.click();
+  a.href = url;
+  
+  // Restored the proper file name structure
+  a.download = `RA_Executive_Summary_${date}.txt`; 
+  
+  document.body.appendChild(a);
+  a.click(); 
+  
+  // Cleanup
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  // 5. Reset button visually to show success
+  button.innerHTML = '<i class="fa-solid fa-check"></i> Exported!';
+  button.style.backgroundColor = '#0f766e'; 
+  button.style.color = 'white';
+  button.style.borderColor = '#0f766e';
+
+  setTimeout(() => {
+    button.innerHTML = originalText;
+    button.style.opacity = '1';
+    button.style.backgroundColor = '';
+    button.style.color = '';
+    button.style.borderColor = '';
+  }, 3000);
 });
 
 // EMAIL
 document.getElementById('email-btn').addEventListener('click', async () => {
+  const button = document.getElementById('email-btn');
+  const originalText = button.innerHTML;
+
   const recipient = prompt("Enter email:");
   if (!recipient) return; 
   
+  // Show sending state
+  button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+  button.style.opacity = '0.7';
+
+  // 1. Gather KPIs
+  const totalArticles = document.getElementById('stat-total-articles').innerText;
+  const date = document.getElementById('date-filter').value;
+  
+  // 2. Gather Opportunities using the NEW CSS classes
+  const oppCards = document.querySelectorAll('.opp-card');
+  let opportunitiesHTML = '';
+  
+  if (oppCards.length === 0) {
+    opportunitiesHTML = "<p style='color: #6b7280;'>No content opportunities matched.</p>";
+  } else {
+    oppCards.forEach(card => {
+      const title = card.querySelector('.opp-header').innerText;
+      const headline = card.querySelector('.opp-title').innerText;
+      const link = card.querySelector('.opp-title a').href;
+      const summary = card.querySelector('.opp-desc').innerText;
+      
+      opportunitiesHTML += `
+        <div style="margin-bottom: 24px;">
+          <span style="display: inline-block; background-color: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; margin-bottom: 8px;">${title}</span>
+          <h4 style="margin: 0 0 6px 0; font-size: 16px; line-height: 1.4;">
+            <a href="${link}" style="color: #111827; text-decoration: none; font-weight: 600;">${headline}</a>
+          </h4>
+          <p style="margin: 0; color: #4b5563; font-size: 14px; line-height: 1.5;">${summary}</p>
+        </div>
+      `;
+    });
+  }
+
+  // 3. Build the rich HTML template
+  const htmlMessage = `
+    <div style="background-color: #f5f7fb; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden;">
+        
+        <!-- HEADER WITH RESTORED LOGO -->
+        <div style="padding: 30px; text-align: center; border-bottom: 1px solid #f3f4f6;">
+          <img src="https://g1.restaurantassociation.com/media/images/RA-Newsletter/May-26/RA-Logo-Black.png" alt="Restaurant Association Logo" style="max-height: 50px; display: block; margin: 0 auto 20px auto;" onerror="this.style.display='none';">
+          <h2 style="color: #111827; margin: 0; font-size: 24px; font-weight: 700;">Executive News Brief</h2>
+          <p style="color: #6b7280; font-size: 14px; margin-top: 5px;">${date}</p>
+        </div>
+
+        <div style="padding: 30px;">
+          <h3 style="color: #0f766e; font-size: 15px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px;">Daily KPIs</h3>
+          <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 30px; border: 1px solid #f3f4f6;">
+            <p style="margin: 0; color: #374151;"><strong>New Articles Found:</strong> <span style="color: #111827;">${totalArticles}</span></p>
+          </div>
+          <h3 style="color: #0f766e; font-size: 15px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px;">Content Opportunities</h3>
+          ${opportunitiesHTML}
+        </div>
+        
+      </div>
+    </div>
+  `;
+
+  // 4. Send to n8n with proper JSON headers
   const payload = {
     recipient: recipient,
-    subject: `News Brief`,
-    message: `<p>Executive Summary attached.</p>`
+    subject: `Daily Industry News Brief - ${date}`,
+    message: htmlMessage
   };
-  await fetch(emailWebhookUrl, { method: 'POST', body: JSON.stringify(payload) });
-  alert("Sent!");
+
+  try {
+    const response = await fetch(emailWebhookUrl, { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, // This header is required for n8n to read the email!
+      body: JSON.stringify(payload) 
+    });
+
+    if (response.ok) {
+      button.innerHTML = '<i class="fa-solid fa-check"></i> Sent!';
+      button.style.backgroundColor = '#0f766e';
+      button.style.color = 'white';
+    } else {
+      throw new Error('Failed to send');
+    }
+  } catch (error) {
+    console.error(error);
+    button.innerHTML = '<i class="fa-solid fa-xmark"></i> Failed';
+    button.style.backgroundColor = '#dc2626';
+    button.style.color = 'white';
+  }
+
+  // Reset button state
+  setTimeout(() => {
+    button.innerHTML = originalText;
+    button.style.opacity = '1';
+    button.style.backgroundColor = '';
+    button.style.color = '';
+  }, 3000);
 });
 
 </script>
