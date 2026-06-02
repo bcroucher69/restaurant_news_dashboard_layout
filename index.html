@@ -593,17 +593,18 @@ async function loadNews() {
     feedContainer.innerHTML = '';
     oppContainer.innerHTML = '';
 
-    // --- NEW: DYNAMIC 'LAST UPDATED' KPI ---
-    // Instead of local storage, we pull the exact date/time from the newest article in your database
-    if (data && data.length > 0) {
-      const sortedData = [...data].sort((a, b) => new Date(b['Date Found']) - new Date(a['Date Found']));
-      const newestDateObj = new Date(sortedData[0]['Date Found']);
-      
-      document.getElementById('stat-date-display').innerText = newestDateObj.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles', dateStyle: 'medium' });
-      document.getElementById('stat-last-updated').innerText = newestDateObj.toLocaleTimeString('en-US', { timeZone: 'America/Los_Angeles', timeStyle: 'short' }) + ' PST';
+    // --- RESTORED: FETCH BUTTON EXECUTION TRACKER ---
+    // This tracks the exact moment the "Fetch News Now" button was last clicked
+    const cachedTime = localStorage.getItem('dashboard_pst_time');
+    const cachedDate = localStorage.getItem('dashboard_pst_date');
+
+    if (cachedDate && cachedTime) {
+      document.getElementById('stat-date-display').innerText = cachedDate;
+      document.getElementById('stat-last-updated').innerText = cachedTime + ' PST';
     } else {
-      document.getElementById('stat-date-display').innerText = 'No Data';
-      document.getElementById('stat-last-updated').innerText = '-';
+      // Clean default state if the button hasn't been clicked yet on this browser
+      document.getElementById('stat-date-display').innerText = 'Standby';
+      document.getElementById('stat-last-updated').innerText = 'Click Fetch News to start';
     }
 
     // FILTERING
