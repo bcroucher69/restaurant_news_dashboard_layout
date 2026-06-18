@@ -581,7 +581,8 @@ async function loadNews() {
       feedContainer.innerHTML += `
         <article class="article-card">
           <button class="bookmark-btn"><i class="fa-regular fa-bookmark"></i></button>
-          
+          <button class="publish-trigger-btn" data-headline="${article.Headline}" data-summary="${article.Summary}" data-link="${articleUrl}" style="position: absolute; top: 24px; right: 56px; color: white; background: #0f766e; border: none; font-size: 12px; font-weight: 600; cursor: pointer; padding: 6px 12px; border-radius: 6px; display: flex; align-items: center; gap: 6px; transition: background 0.2s;">
+		<i class="fa-solid fa-cloud-arrow-up"></i> Push on RA </button>
           <div class="brand-logo-container">
             <div class="brand-logo ${brand.class}">${brand.text}</div>
           </div>
@@ -824,6 +825,136 @@ document.getElementById('email-btn').addEventListener('click', async () => {
   }, 3000);
 });
 
+</script>
+<!-- THE PUBLISH MODAL (Hidden by default) -->
+<div id="publish-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+  <div style="background: white; padding: 32px; border-radius: 16px; width: 600px; max-width: 90%; max-height: 90vh; overflow-y: auto;">
+    <h2 style="margin-top: 0;">Publish to RA Blog</h2>
+    
+    <label style="display:block; margin-top: 16px; font-weight: 600;">Topic / Title</label>
+    <input type="text" id="pub-topic" style="width: 100%; padding: 8px; margin-top: 4px;">
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+      <div>
+        <label style="display:block; font-weight: 600;">Category</label>
+		<input type="text" id="pub-category" style="width: 100%; padding: 8px; margin-top: 4px;" placeholder="e.g., news, business, technology">
+      </div>
+      <div>
+        <label style="display:block; font-weight: 600;">Show on Hero?</label>
+        <select id="pub-hero" style="width: 100%; padding: 8px; margin-top: 4px;">
+          <option value="false">False</option>
+          <option value="true">True</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+      <div>
+        <label style="display:block; font-weight: 600;">Hero Start At</label>
+        <input type="datetime-local" id="pub-hero-start" style="width: 100%; padding: 8px; margin-top: 4px;">
+      </div>
+      <div>
+        <label style="display:block; font-weight: 600;">Hero End At</label>
+        <input type="datetime-local" id="pub-hero-end" style="width: 100%; padding: 8px; margin-top: 4px;">
+      </div>
+    </div>
+
+    <label style="display:block; margin-top: 16px; font-weight: 600;">Featured Image URL</label>
+    <input type="text" id="pub-featured-image" style="width: 100%; padding: 8px; margin-top: 4px;">
+
+    <label style="display:block; margin-top: 16px; font-weight: 600;">Body Image URLs (comma separated)</label>
+    <input type="text" id="pub-body-images" style="width: 100%; padding: 8px; margin-top: 4px;">
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+      <div>
+        <label style="display:block; font-weight: 600;">Hyperlink Text</label>
+        <input type="text" id="pub-hyper-text" style="width: 100%; padding: 8px; margin-top: 4px;" placeholder="e.g., POS Systems|1">
+      </div>
+      <div>
+        <label style="display:block; font-weight: 600;">Mention Hyperlink</label>
+        <input type="text" id="pub-hyper-link" style="width: 100%; padding: 8px; margin-top: 4px;">
+      </div>
+    </div>
+
+    <label style="display:block; margin-top: 16px; font-weight: 600;">Raw Content (Auto-filled from Article)</label>
+    <textarea id="pub-raw-content" style="width: 100%; padding: 8px; margin-top: 4px; height: 100px; font-family: inherit;"></textarea>
+
+    <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px;">
+      <button onclick="document.getElementById('publish-modal').style.display='none'" class="secondary" style="background: #f3f4f6; color: #111827; border: none;">Cancel</button>
+      <button id="submit-publish-btn" class="primary" style="background: #0f766e; color: white; border: none;">Push to GitLab</button>
+    </div>
+  </div>
+</div>
+
+<!-- THE JAVASCRIPT TO MAKE IT WORK -->
+<script>
+// IMPORTANT: Paste your n8n Production Webhook URL below
+const publishWebhookUrl = 'https://sa1.altametrics.com/webhook/d0837b5a-aadc-4cb8-b203-712b3756c99e';
+
+// 1. Open Modal & Auto-Fill Data when "Push on RA" is clicked
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.publish-trigger-btn');
+  if (btn) {
+    document.getElementById('pub-topic').value = btn.getAttribute('data-headline');
+    document.getElementById('pub-raw-content').value = btn.getAttribute('data-summary');
+    // Store the link invisibly so we can send it to n8n
+    document.getElementById('pub-raw-content').setAttribute('data-target-link', btn.getAttribute('data-link'));
+    
+    const now = new Date();
+    const tmrw = new Date(now.getTime() + (24 * 60 * 60 * 1000));
+    document.getElementById('pub-hero-start').value = now.toISOString().slice(0, 16);
+    document.getElementById('pub-hero-end').value = tmrw.toISOString().slice(0, 16);
+
+    document.getElementById('publish-modal').style.display = 'flex';
+  }
+});
+
+// 2. Submit the Form Data to n8n Webhook
+document.getElementById('submit-publish-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('submit-publish-btn');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Pushing...';
+  btn.style.opacity = '0.7';
+  
+  // Gather all the inputs
+  const payload = {
+    topic: document.getElementById('pub-topic').value,
+    category: document.getElementById('pub-category').value,
+    isHero: document.getElementById('pub-hero').value,
+    heroStartAt: document.getElementById('pub-hero-start').value + ":00Z",
+    heroEndAt: document.getElementById('pub-hero-end').value + ":00Z",
+    featuredImage: document.getElementById('pub-featured-image').value,
+    imageUrls: document.getElementById('pub-body-images').value,
+    hyperlinksText: document.getElementById('pub-hyper-text').value,
+    mentionHyperlink: document.getElementById('pub-hyper-link').value,
+    rawContent: document.getElementById('pub-raw-content').value,
+    articleUrl: document.getElementById('pub-raw-content').getAttribute('data-target-link') // NEW: Passes the URL
+  };
+
+  try {
+    // Send to n8n
+    const response = await fetch(publishWebhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (response.ok) {
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Published!';
+      btn.style.backgroundColor = '#10b981';
+      setTimeout(() => document.getElementById('publish-modal').style.display = 'none', 1500);
+    } else throw new Error('Failed');
+  } catch (error) {
+    btn.innerHTML = '<i class="fa-solid fa-xmark"></i> Error';
+    btn.style.backgroundColor = '#dc2626';
+  }
+  
+  setTimeout(() => {
+    btn.innerHTML = originalText;
+    btn.style.opacity = '1';
+    btn.style.backgroundColor = '#0f766e';
+  }, 3000);
+});
 </script>
 </body>
 </html>
